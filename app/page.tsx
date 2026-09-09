@@ -9,36 +9,37 @@ export default function Page() {
   return (
     <>
       <header className="top">
-        <div className="wrap mast">
-          <div className="mast-id">
+        <div className="wrap">
+          <div className="mast">
             <p className="eyebrow">alirezarezvani / claude-skills · v2.12.0 · MIT</p>
             <h1>ดัชนีสกิลทั้งหมด</h1>
             <p className="sub">
-              ค้นหาด้วยภาษาไทยหรืออังกฤษ กรองตามโดเมน และ
-              <b>คัดลอกสกิลไปใช้กับ AI ตัวไหนก็ได้</b> — Claude Code, Claude.ai, ChatGPT หรือ Gemini
+              ค้นหาด้วยภาษาไทยหรืออังกฤษ กรองตามโดเมน แล้ว<b>คัดลอกไปใช้ได้ทันที</b> ทั้ง{" "}
+              <span className="nb">Claude Code</span>, <span className="nb">Claude.ai</span>,
+              ChatGPT และ Gemini
             </p>
           </div>
-          <div className="tally">
-            <div>
-              <b className="num">{stats.skills}</b>
-              <span>สกิล</span>
-            </div>
-            <div>
-              <b className="num">{stats.domains}</b>
-              <span>โดเมน</span>
-            </div>
-            <div>
-              <b className="num">{stats.scripts}</b>
-              <span>สคริปต์</span>
-            </div>
-            <div>
-              <b className="num">{stats.references}</b>
-              <span>เอกสารอ้างอิง</span>
-            </div>
-            <div>
-              <b className="num">{stats.plugins}</b>
-              <span>ปลั๊กอิน</span>
-            </div>
+        </div>
+        <div className="wrap statbar">
+          <div>
+            <b className="num">{stats.skills}</b>
+            <span>สกิล</span>
+          </div>
+          <div>
+            <b className="num">{stats.domains}</b>
+            <span>โดเมน</span>
+          </div>
+          <div>
+            <b className="num">{stats.scripts}</b>
+            <span>สคริปต์ Python</span>
+          </div>
+          <div>
+            <b className="num">{stats.references}</b>
+            <span>เอกสารอ้างอิง</span>
+          </div>
+          <div>
+            <b className="num">{stats.plugins}</b>
+            <span>ปลั๊กอิน</span>
           </div>
         </div>
       </header>
