@@ -10,42 +10,7 @@ import {
   installCommand,
   portablePrompt,
 } from "@/lib/skills";
-
-/** Bodies are fetched once per skill and kept for the life of the page. */
-const cache = new Map<string, string>();
-
-async function loadBody(slug: string): Promise<string> {
-  const cached = cache.get(slug);
-  if (cached !== undefined) return cached;
-  const response = await fetch(`${BASE}/data/body/${slug}.json`);
-  if (!response.ok) throw new Error(`โหลดเนื้อหาไม่สำเร็จ (${response.status})`);
-  const { body } = (await response.json()) as { body: string };
-  cache.set(slug, body);
-  return body;
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Clipboard API is blocked in some embedded contexts; fall back to a
-    // detached textarea, which still works under a user gesture.
-    try {
-      const area = document.createElement("textarea");
-      area.value = text;
-      area.style.position = "fixed";
-      area.style.opacity = "0";
-      document.body.appendChild(area);
-      area.select();
-      const ok = document.execCommand("copy");
-      area.remove();
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-}
+import { cachedBody, copyText, loadBody } from "@/lib/copy";
 
 export default function SkillDetail({
   skill,
@@ -58,15 +23,16 @@ export default function SkillDetail({
   platform: Platform;
   onNotify: (message: string) => void;
 }) {
-  const [body, setBody] = useState<string | null>(cache.get(skill.slug) ?? null);
+  const [body, setBody] = useState<string | null>(cachedBody(skill.slug) ?? null);
   const [error, setError] = useState<string | null>(null);
   const [showSource, setShowSource] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    if (cache.has(skill.slug)) {
-      setBody(cache.get(skill.slug)!);
+    const ready = cachedBody(skill.slug);
+    if (ready !== undefined) {
+      setBody(ready);
       return;
     }
     loadBody(skill.slug)
@@ -103,7 +69,12 @@ export default function SkillDetail({
 
   return (
     <div className="detail">
-      <div className="path">{skill.path}</div>
+      <div className="detail-top">
+        <div className="path">{skill.path}</div>
+        <a className="full" href={`${BASE}/s/${skill.slug}/`}>
+          เปิดหน้าเต็ม ↗
+        </a>
+      </div>
 
       <dl>
         <div className="pair">

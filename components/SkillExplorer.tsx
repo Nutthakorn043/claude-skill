@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   BASE,
   DOMAIN_LABEL,
@@ -16,6 +16,9 @@ import { TH2EN, hasThai, parseQuery } from "@/lib/thai";
 import SkillDetail from "@/components/SkillDetail";
 
 type Sort = "domain" | "name" | "tools";
+
+/** Rows added per batch. 506 at once cost 5,206 DOM nodes on first paint. */
+const PAGE = 60;
 
 export default function SkillExplorer({
   skills,
@@ -36,7 +39,34 @@ export default function SkillExplorer({
   const [toast, setToast] = useState<string | null>(null);
 
   const searchRef = useRef<HTMLInputElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The control bar wraps to two rows below ~1240px and to two more on a phone,
+  // so every sticky offset under it has to follow its measured height rather
+  // than a constant. Anything pinned below reads --bar.
+  useEffect(() => {
+    const bar = controlsRef.current;
+    if (!bar) return;
+    const root = document.documentElement;
+    const apply = () => root.style.setProperty("--bar", `${Math.round(bar.offsetHeight)}px`);
+    apply();
+
+    const observer = new ResizeObserver(apply);
+    observer.observe(bar);
+    // ResizeObserver only delivers on a rendered frame, so a tab that is
+    // resized while hidden would keep a stale offset until it repaints. The
+    // resize event and the webfont swap - which reflows the bar on first load -
+    // both land without one.
+    window.addEventListener("resize", apply);
+    document.fonts?.ready.then(apply);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", apply);
+      root.style.removeProperty("--bar");
+    };
+  }, []);
 
   const platform = PLATFORMS.find((p) => p.id === platformId) ?? PLATFORMS[0];
   const sourceById = useMemo(() => new Map(sources.map((x) => [x.id, x])), [sources]);
@@ -60,7 +90,10 @@ export default function SkillExplorer({
   }, [inSource]);
   const maxDomain = domains[0]?.[1] ?? 1;
 
-  const parsed = useMemo(() => parseQuery(query), [query]);
+  // Keystrokes paint immediately; filtering 506 skills happens against the
+  // value React hands over once it has time for it.
+  const deferredQuery = useDeferredValue(query);
+  const parsed = useMemo(() => parseQuery(deferredQuery), [deferredQuery]);
 
   const results = useMemo(() => {
     const { concepts, leftover, plain } = parsed;
@@ -80,6 +113,37 @@ export default function SkillExplorer({
       out = [...out].sort((a, b) => b.scripts - a.scripts || a.name.localeCompare(b.name));
     return out;
   }, [inSource, indexes, parsed, domain, onlyTools, sort]);
+
+  const [limit, setLimit] = useState(PAGE);
+  const moreRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setLimit(PAGE);
+  }, [results]);
+
+  // The button is the sentinel, so scrolling grows the list and a keyboard or a
+  // browser without IntersectionObserver still has something to press.
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setLimit((n) => n + PAGE);
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [limit, results]);
+
+  const shown = useMemo(() => results.slice(0, limit), [results, limit]);
+
+  // Counted once instead of re-filtering the whole result set per group head.
+  const groupCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of results) counts.set(s.domain, (counts.get(s.domain) ?? 0) + 1);
+    return counts;
+  }, [results]);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -104,7 +168,7 @@ export default function SkillExplorer({
 
   return (
     <>
-      <div className="controls">
+      <div className="controls" ref={controlsRef}>
         <div className="wrap controls-in">
           <div className="searchbox">
             <span className="mag" aria-hidden="true">
@@ -130,72 +194,78 @@ export default function SkillExplorer({
             <kbd>/</kbd>
           </div>
 
-          <select
-            value={sourceId ?? ""}
-            aria-label="แหล่งที่มาของสกิล"
-            onChange={(e) => {
-              setSourceId(e.target.value || null);
-              setDomain(null);
-              reset();
-            }}
-          >
-            <option value="">ทุกแหล่ง ({skills.length})</option>
-            {sources.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.label} ({x.skills})
-              </option>
-            ))}
-          </select>
+          <div className="filters">
+            <select
+              value={sourceId ?? ""}
+              aria-label="แหล่งที่มาของสกิล"
+              onChange={(e) => {
+                setSourceId(e.target.value || null);
+                setDomain(null);
+                reset();
+              }}
+            >
+              <option value="">ทุกแหล่ง ({skills.length})</option>
+              {sources.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label} ({x.skills})
+                </option>
+              ))}
+            </select>
 
-          <select
-            className="platform"
-            value={platformId}
-            aria-label="ปลายทางที่จะเอาสกิลไปใช้"
-            onChange={(e) => setPlatformId(e.target.value)}
-          >
-            {PLATFORMS.map((p) => (
-              <option key={p.id} value={p.id}>
-                → {p.label}
-              </option>
-            ))}
-          </select>
+            <select
+              className="platform"
+              value={platformId}
+              aria-label="ปลายทางที่จะเอาสกิลไปใช้"
+              onChange={(e) => setPlatformId(e.target.value)}
+            >
+              {PLATFORMS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  → {p.label}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={lang}
-            aria-label="ภาษาของคำอธิบาย"
-            onChange={(e) => setLang(e.target.value as Lang)}
-          >
-            <option value="th">คำอธิบายไทย</option>
-            <option value="en">English</option>
-            <option value="both">ไทย + English</option>
-          </select>
+            <select
+              value={lang}
+              aria-label="ภาษาของคำอธิบาย"
+              onChange={(e) => setLang(e.target.value as Lang)}
+            >
+              <option value="th">คำอธิบายไทย</option>
+              <option value="en">English</option>
+              <option value="both">ไทย + English</option>
+            </select>
 
-          <select value={sort} aria-label="เรียงลำดับ" onChange={(e) => setSort(e.target.value as Sort)}>
-            <option value="domain">เรียงตามโดเมน</option>
-            <option value="name">เรียงตามชื่อ A–Z</option>
-            <option value="tools">เรียงตามจำนวนสคริปต์</option>
-          </select>
+            <select
+              value={sort}
+              aria-label="เรียงลำดับ"
+              onChange={(e) => setSort(e.target.value as Sort)}
+            >
+              <option value="domain">เรียงตามโดเมน</option>
+              <option value="name">เรียงตามชื่อ A–Z</option>
+              <option value="tools">เรียงตามจำนวนสคริปต์</option>
+            </select>
 
-          <button
-            className="tgl"
-            type="button"
-            aria-pressed={onlyTools}
-            onClick={() => {
-              setOnlyTools((v) => !v);
-              reset();
-            }}
-          >
-            มีสคริปต์ Python
-          </button>
+            <button
+              className="tgl"
+              type="button"
+              aria-pressed={onlyTools}
+              onClick={() => {
+                setOnlyTools((v) => !v);
+                reset();
+              }}
+            >
+              มีสคริปต์ Python
+            </button>
 
-          <button
-            className="tgl"
-            type="button"
-            aria-pressed={vocabOpen}
-            onClick={() => setVocabOpen((v) => !v)}
-          >
-            คำค้นไทย
-          </button>
+            <button
+              className="tgl"
+              type="button"
+              aria-pressed={vocabOpen}
+              onClick={() => setVocabOpen((v) => !v)}
+            >
+              คำค้นไทย
+            </button>
+          </div>
 
           <p className="count" aria-live="polite">
             แสดง <b className="num">{results.length}</b> / <span className="num">{inSource.length}</span>
@@ -276,13 +346,15 @@ export default function SkillExplorer({
                 <b>ไม่พบสกิลที่ตรงกับเงื่อนไข</b>
                 {parsed.thai.length
                   ? "ลองใช้คำกว้างขึ้น หรือเลือกโดเมน “ทั้งหมด”"
-                  : hasThai(query)
+                  : hasThai(deferredQuery)
                     ? "คำไทยนี้ยังไม่อยู่ในพจนานุกรม — กดปุ่ม “คำค้นไทย” ด้านบนเพื่อดูคำที่รองรับ"
                     : "ลองลบคำค้น หรือเลือกโดเมน “ทั้งหมด”"}
               </div>
             ) : (
               <Results
-                results={results}
+                shown={shown}
+                total={results.length}
+                groupCounts={groupCounts}
                 sort={sort}
                 highlight={highlight}
                 openSlug={openSlug}
@@ -293,6 +365,12 @@ export default function SkillExplorer({
                 onToggle={(slug) => setOpenSlug((cur) => (cur === slug ? null : slug))}
                 onNotify={notify}
               />
+            )}
+
+            {limit < results.length && (
+              <button className="more" type="button" ref={moreRef} onClick={() => setLimit((n) => n + PAGE)}>
+                แสดงเพิ่ม — เหลืออีก <b className="num">{results.length - limit}</b> สกิล
+              </button>
             )}
           </main>
         </div>
@@ -330,7 +408,9 @@ function RailItem({
 }
 
 function Results({
-  results,
+  shown,
+  total,
+  groupCounts,
   sort,
   highlight,
   openSlug,
@@ -341,7 +421,9 @@ function Results({
   onToggle,
   onNotify,
 }: {
-  results: Skill[];
+  shown: Skill[];
+  total: number;
+  groupCounts: Map<string, number>;
   sort: Sort;
   highlight: string;
   openSlug: string | null;
@@ -356,10 +438,10 @@ function Results({
 
   if (sort === "domain") {
     let current: string | null = null;
-    for (const skill of results) {
+    for (const skill of shown) {
       if (skill.domain !== current) {
         current = skill.domain;
-        const count = results.filter((s) => s.domain === current).length;
+        const count = groupCounts.get(current) ?? 0;
         rows.push(
           <div className="grouphead" key={`head-${current}`}>
             <h3>{DOMAIN_LABEL[current] ?? current}</h3>
@@ -374,10 +456,10 @@ function Results({
     rows.push(
       <div className="grouphead" key="head-flat">
         <h3>{sort === "name" ? "เรียง A–Z" : "เรียงตามจำนวนสคริปต์"}</h3>
-        <span className="gc">{results.length} สกิล</span>
+        <span className="gc">{total} สกิล</span>
       </div>
     );
-    for (const skill of results) rows.push(row(skill));
+    for (const skill of shown) rows.push(row(skill));
   }
 
   return <>{rows}</>;
@@ -387,23 +469,30 @@ function Results({
     const text = describe(skill, lang);
     return (
       <div key={skill.slug}>
-        <button className="row" type="button" aria-expanded={open} onClick={() => onToggle(skill.slug)}>
-          <span>
-            <span className="nm">{marked(skill.name, highlight)}</span>
-            {skill.group !== skill.domain && (
-              <span className="bundle">{skill.group.slice(skill.domain.length + 1)}/</span>
-            )}
-          </span>
-          <span className="dsc">
-            <span className="dsc-main">{text.main}</span>
-            {text.sub && <span className="dsc-alt">{text.sub}</span>}
-          </span>
-          <span className="kit">
-            {showSourceChip && <span className="chip src">{sourceById.get(skill.source)?.label}</span>}
-            {skill.scripts > 0 && <span className="chip py num">{skill.scripts} py</span>}
-            {skill.references > 0 && <span className="chip num">{skill.references} ref</span>}
-          </span>
-        </button>
+        <div className="rowline">
+          <button className="row" type="button" aria-expanded={open} onClick={() => onToggle(skill.slug)}>
+            <span>
+              <span className="nm">{marked(skill.name, highlight)}</span>
+              {skill.bundle && <span className="bundle">{skill.bundle}/</span>}
+            </span>
+            <span className="dsc">
+              <span className="dsc-main">{text.main}</span>
+              {text.sub && <span className="dsc-alt">{text.sub}</span>}
+            </span>
+            <span className="kit">
+              {showSourceChip && <span className="chip src">{sourceById.get(skill.source)?.label}</span>}
+              {skill.scripts > 0 && <span className="chip py num">{skill.scripts} py</span>}
+              {skill.references > 0 && <span className="chip num">{skill.references} ref</span>}
+            </span>
+          </button>
+          <a
+            className="perma"
+            href={`${BASE}/s/${skill.slug}/`}
+            aria-label={`หน้าเต็มของ ${skill.name}`}
+          >
+            ↗
+          </a>
+        </div>
         {open && (
           <SkillDetail
             skill={skill}

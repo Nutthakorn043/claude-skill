@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url";
 
 const basePath = "/claude-skill";
 
+// Absolute origin for canonical URLs, Open Graph tags and sitemap.xml. Pages
+// deploys this repository at <owner>.github.io/<repo>, lowercased.
+const siteUrl = `https://nutthakorn043.github.io${basePath}`;
+
 /** @type {import('next').NextConfig} */
 export default {
   output: "export",
@@ -19,5 +23,5 @@ export default {
   turbopack: { root: dirname(fileURLToPath(import.meta.url)) },
   trailingSlash: true,
   images: { unoptimized: true },
-  env: { NEXT_PUBLIC_BASE_PATH: basePath },
+  env: { NEXT_PUBLIC_BASE_PATH: basePath, NEXT_PUBLIC_SITE_URL: siteUrl },
 };

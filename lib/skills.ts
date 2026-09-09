@@ -1,4 +1,5 @@
-export type Skill = {
+/** A record exactly as data/index.json stores it. Server side only. */
+export type RawSkill = {
   slug: string;
   /** id of the repository this skill came from; see data/sources.json. */
   source: string;
@@ -15,6 +16,32 @@ export type Skill = {
   references: number;
   bodyBytes: number;
 };
+
+/**
+ * What the browser actually receives. Every field here is serialised 506 times
+ * into the page, so `dir` (always `path` minus the filename) and `group` (only
+ * ever shown as its last segment) are dropped in favour of things derived once
+ * on the server.
+ */
+export type Skill = Omit<RawSkill, "dir" | "group"> & {
+  /** Folder between the domain and the skill, shown next to the name. */
+  bundle: string;
+};
+
+/** `agent-launcher/skills/foo/SKILL.md` -> `agent-launcher/skills/foo` */
+export function dirOf(s: Skill): string {
+  return s.path.replace(/\/[^/]*$/, "");
+}
+
+export function toSkill({ dir: _dir, group, ...rest }: RawSkill): Skill {
+  // The old label sliced `domain.length + 1` off the front of `group`, which
+  // cut mid-word whenever the domain was not the leading path segment
+  // ("plugins/agent-plugins/earnings-reviewer" showed as
+  // "plugins/earnings-reviewer"). The trailing segment is the bundle in both
+  // shapes.
+  const last = group.slice(group.lastIndexOf("/") + 1);
+  return { ...rest, bundle: last === rest.domain ? "" : last };
+}
 
 export type Stats = {
   skills: number;
@@ -35,6 +62,9 @@ export type Source = {
 };
 
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/** Absolute origin, needed for canonical links, Open Graph and the sitemap. */
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
 export const DOMAIN_LABEL: Record<string, string> = {
   engineering: "Engineering (POWERFUL tier)",
@@ -129,7 +159,7 @@ export function installCommand(s: Skill, source: Source): string {
     `# ติดตั้ง ${s.name} จาก ${source.repo} (${source.license})`,
     `SRC=~/.cache/claude-skill-sources/${source.id}`,
     `git clone --depth 1 https://github.com/${source.repo}.git "$SRC" 2>/dev/null || git -C "$SRC" pull --quiet`,
-    `mkdir -p ~/.claude/skills && cp -r "$SRC/${s.dir}" ~/.claude/skills/`,
+    `mkdir -p ~/.claude/skills && cp -r "$SRC/${dirOf(s)}" ~/.claude/skills/`,
   ].join("\n");
 }
 

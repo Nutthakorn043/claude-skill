@@ -1,10 +1,10 @@
 import data from "@/data/index.json";
 import SkillExplorer from "@/components/SkillExplorer";
-import type { Skill, Source, Stats } from "@/lib/skills";
+import { type RawSkill, type Source, type Stats, toSkill } from "@/lib/skills";
 
 export default function Page() {
   const stats = data.stats as Stats;
-  const skills = data.skills as Skill[];
+  const skills = (data.skills as RawSkill[]).map(toSkill);
   const sources = data.sources as Source[];
 
   return (
