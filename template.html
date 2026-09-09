@@ -98,7 +98,8 @@ select:focus-visible,.tgl:focus-visible{outline:2px solid var(--focus);outline-o
 
 /* ---------- shell ---------- */
 .shell{display:grid;grid-template-columns:224px minmax(0,1fr);gap:36px;padding:26px 0 80px;align-items:start}
-nav.rail{position:sticky;top:66px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px}
+nav.rail{position:sticky;top:66px;max-height:calc(100vh - 90px);
+  overflow-y:auto;overflow-x:hidden;padding-right:4px}
 .rail h2{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--faint);margin:0 0 9px;font-weight:500}
 .rail ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
