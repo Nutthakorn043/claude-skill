@@ -1,57 +1,78 @@
 # Claude Skills Index
 
-หน้าเว็บไฟล์เดียวสำหรับค้นหา กรอง และคัดลอกสกิลทั้งหมดจากคลัง
+เว็บค้นหาและคัดลอกสกิลทั้งหมดจากคลัง
 [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills)
 ไปใช้กับ Claude Code, Claude.ai, ChatGPT หรือ Gemini
 
+**Next.js 16 · React 19 · TypeScript · static export → GitHub Pages**
+
 ## ทำอะไรได้
 
-- **ค้นหาสด** จากชื่อสกิล คำอธิบาย และพาธไฟล์ (กด `/` เพื่อโฟกัสช่องค้นหา, `Esc` เพื่อล้าง)
+- **ค้นหาภาษาไทยได้** — พิมพ์ `ความปลอดภัย` `ฐานข้อมูล` `คูเบอร์เนเทส` ได้เลย ระบบแปลงเป็นคำอังกฤษที่มีอยู่จริงในข้อมูลแล้วค้นให้ พร้อมแสดงว่าแปลงเป็นคำอะไรบ้าง พิมพ์หลายคำ = ต้องตรงทุกคำ
+- **ค้นภาษาอังกฤษ** ยังทำงานแบบ substring เหมือนเดิม พิมพ์ `kube` เจอ `kubernetes-operator`
+- **ปุ่ม “คำค้นไทย”** เปิดดูคำที่รองรับทั้งหมด คลิกแล้วค้นทันที
 - **กรองตามโดเมน** ทั้ง 20 โดเมน พร้อมจำนวนและแถบสัดส่วน
 - **เรียงได้ 3 แบบ** — ตามโดเมน / ชื่อ A–Z / จำนวนสคริปต์ Python
 - **คัดลอกไปใช้ต่อ** เลือกปลายทางได้ 4 แบบ
-  - `Claude Code` → คัดลอกคำสั่ง `cp -r` สำหรับติดตั้งลง `~/.claude/skills/` (ติดตั้งถาวร)
-  - `Claude.ai` / `ChatGPT` / `Gemini` → คัดลอกเนื้อหาสกิลทั้งไฟล์ในรูป prompt พร้อมวางลงช่อง Instructions ของ Project, Custom GPT หรือ Gem
-- **ดู `SKILL.md` ดิบ** ได้ในหน้าเลย ไม่ต้องเปิดไฟล์
-
-เนื้อหา `SKILL.md` ทุกไฟล์ฝังอยู่ในหน้าเดียว ไม่มีการเรียก API ภายนอก เปิดจากไฟล์ในเครื่องก็ใช้ได้
+  - `Claude Code` → คำสั่ง `cp -r` ติดตั้งลง `~/.claude/skills/` (ติดตั้งถาวรจริง)
+  - `Claude.ai` / `ChatGPT` / `Gemini` → เนื้อหาสกิลทั้งไฟล์ในรูป prompt วางลงช่อง Instructions ของ Project, Custom GPT หรือ Gem
+- **ดู `SKILL.md` ดิบ** ได้ในหน้าเลย
 
 ## ข้อจำกัดที่ต้องรู้
 
-การวาง prompt ในแชท **ไม่ใช่การติดตั้งถาวร** — มันคือการโหลดคำสั่งเข้า context ของบทสนทนาหรือของ Project นั้นเท่านั้น
-การติดตั้งถาวรจริงมีเฉพาะฝั่ง Claude Code (คัดลอกโฟลเดอร์ลง `~/.claude/skills/`)
+การวาง prompt ในแชท **ไม่ใช่การติดตั้งถาวร** — คือการโหลดคำสั่งเข้า context ของบทสนทนาหรือ Project นั้นเท่านั้น
+ติดตั้งถาวรจริงมีเฉพาะฝั่ง Claude Code
 
 สกิลหลายตัวมาพร้อมสคริปต์ Python และเอกสารอ้างอิงที่ **ไม่ได้รวมอยู่ใน prompt ที่คัดลอก**
-prompt จะแนบหมายเหตุบอกโมเดลไว้ให้แล้วว่าถ้าเจอคำสั่งให้รัน `python scripts/...` ให้วิเคราะห์เองแทน
+prompt แนบหมายเหตุบอกโมเดลไว้ให้แล้วว่าถ้าเจอคำสั่งให้รัน `python scripts/...` ให้วิเคราะห์เองแทน
 ถ้าต้องการเครื่องมือครบต้องติดตั้งแบบคัดลอกโฟลเดอร์
 
-## Build ใหม่
+## โครงสร้าง
 
-`index.html` ถูก commit ไว้แล้ว ใช้งานได้ทันทีโดยไม่ต้อง build
-ถ้าคลังต้นทางอัปเดตแล้วอยากสร้างหน้าใหม่:
+```
+app/                หน้าเว็บ (App Router) + globals.css
+components/         SkillExplorer (state ทั้งหมด) + SkillDetail (โหลดเนื้อหา + ปุ่มคัดลอก)
+lib/skills.ts       type, ปลายทาง, ตัวสร้าง prompt และคำสั่งติดตั้ง
+lib/thai.ts         พจนานุกรมไทย→อังกฤษ 71 คำ + ตัวแยกคำค้น
+scripts/            build-data.mjs — สแกน SKILL.md แล้วสร้างข้อมูล
+data/index.json     metadata ของทุกสกิล (295 KB) ฝังเข้าหน้าตอน build
+public/data/body/   เนื้อหา SKILL.md แยกไฟล์ละสกิล ดึงตอนกดเปิดเท่านั้น
+```
+
+การแยกข้อมูลคือหัวใจของโครงสร้างนี้ — หน้าแรกโหลดแค่ metadata ส่วนเนื้อหารวม 3.15 MB
+จะถูกดึงเฉพาะสกิลที่ผู้ใช้กดเปิดจริง และ cache ไว้ตลอดอายุหน้า
+
+## รันในเครื่อง
 
 ```bash
-git clone https://github.com/alirezarezvani/claude-skills.git
-python build.py claude-skills
+npm install
+npm run dev
 ```
 
-ต้องใช้ Python 3.7+ เท่านั้น ไม่มี dependency ภายนอก
-สคริปต์จะสแกน `SKILL.md` ทุกไฟล์ (ข้าม mirror tree `.codex/ .gemini/ .vibe/ .hermes/` ที่เป็นสำเนาซ้ำ)
-แล้วฉีดข้อมูลลง `template.html` พร้อมอัปเดตตัวเลขสถิติบนหัวหน้าอัตโนมัติ
+เปิด <http://localhost:3000/claude-skill/> — ต้องมี `/claude-skill/` ต่อท้ายเพราะ `basePath`
+ถูกตั้งไว้ให้ตรงกับตอน deploy จะได้ไม่มีความต่างระหว่าง local กับของจริง
 
+## อัปเดตข้อมูลเมื่อคลังต้นทางเปลี่ยน
+
+```bash
+git clone https://github.com/alirezarezvani/claude-skills.git ../claude-skills-main
+npm run data
 ```
-build.py        สคริปต์ build (stdlib ล้วน)
-template.html   เทมเพลตหน้าเว็บ มี placeholder __SKILLS_JSON__
-index.html      ผลลัพธ์ที่ build แล้ว — ไฟล์ที่เว็บเสิร์ฟจริง
-.nojekyll       บอก GitHub Pages ไม่ต้องประมวลผลด้วย Jekyll
-```
 
-## Deploy ด้วย GitHub Pages
+ใช้ Node เท่านั้น ไม่มี dependency ภายนอก
+สคริปต์ข้าม mirror tree `.codex/ .gemini/ .vibe/ .hermes/` ที่เป็นสำเนาซ้ำ
+และคำนวณตัวเลขสถิติบนหัวหน้าจาก tree จริง ไม่ได้ hardcode
 
-push ขึ้น repo แล้วเปิด **Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)`**
-หน้าเว็บจะขึ้นที่ `https://<username>.github.io/<repo>/`
+ข้อมูลที่ได้ถูก commit ลง repo ทำให้ CI build ได้โดยไม่ต้อง clone คลังต้นทาง
 
-ไฟล์ `index.html` ขนาดราว 3.5 MB แต่ GitHub Pages ส่งแบบ gzip ทำให้เหลือประมาณ 1 MB บนสาย
+## Deploy
+
+push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.yml`) จะ build และ deploy ให้เอง
+
+ครั้งแรกต้องตั้งค่า **Settings → Pages → Source: GitHub Actions** เสียก่อน
+
+> ⚠️ `basePath` ใน `next.config.mjs` ตั้งเป็น `/claude-skill` ตายตัวตามชื่อ repo
+> ถ้าเปลี่ยนชื่อ repo ต้องแก้ค่านี้ตามด้วย ไม่งั้น CSS กับ JS จะโหลดไม่ขึ้น
 
 ## เครดิตและสัญญาอนุญาต
 

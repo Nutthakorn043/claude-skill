@@ -1,0 +1,30 @@
+{
+  "name": "claude-skill-index",
+  "version": "1.0.0",
+  "scripts": {
+    "data": "node scripts/build-data.mjs ../claude-skills-main",
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nutthakorn043/claude-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nutthakorn043/claude-skill/issues"
+  },
+  "homepage": "https://github.com/Nutthakorn043/claude-skill#readme",
+  "dependencies": {
+    "next": "^16.3.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "typescript": "^7.0.2"
+  },
+  "private": true
+}
