@@ -2,10 +2,11 @@
   "name": "claude-skill-index",
   "version": "1.0.0",
   "scripts": {
-    "data": "node scripts/build-data.mjs ../claude-skills-main",
+    "data": "node scripts/build-data.mjs",
     "dev": "next dev",
     "build": "next build",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "sources": "node scripts/fetch-sources.mjs"
   },
   "repository": {
     "type": "git",

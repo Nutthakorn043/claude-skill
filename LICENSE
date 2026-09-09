@@ -22,17 +22,28 @@ SOFTWARE.
 
 ---
 
-THIRD-PARTY NOTICE
+THIRD-PARTY NOTICES
 
-The skill content embedded in index.html — every SKILL.md body, name and
-description — is not original to this project. It comes from:
+The skill content in this repository — every SKILL.md body, name and
+description under data/ and public/data/ — is not original to this project.
+It is redistributed from the upstream repositories listed in
+data/sources.json, each under its own license:
 
     claude-skills
     https://github.com/alirezarezvani/claude-skills
     MIT License, Copyright (c) 2025 Alireza Rezvani
 
-That work is redistributed here under the same MIT terms. Its copyright
-notice and permission notice are reproduced below, as the license requires.
+    financial-services
+    https://github.com/anthropics/financial-services
+    Apache License 2.0, Copyright Anthropic PBC
+
+Add a corresponding entry here whenever a source is added to
+data/sources.json.
+
+--- claude-skills (MIT) ---
+
+The MIT license requires that its copyright notice and permission notice be
+reproduced in redistributions, so they follow in full.
 
     MIT License
 
@@ -55,3 +66,20 @@ notice and permission notice are reproduced below, as the license requires.
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
+
+--- financial-services (Apache-2.0) ---
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use those files except in compliance with the License. You may obtain a copy
+of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.
+
+The full license text ships with the upstream repository at
+https://github.com/anthropics/financial-services/blob/main/LICENSE

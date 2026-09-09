@@ -1,5 +1,7 @@
 export type Skill = {
   slug: string;
+  /** id of the repository this skill came from; see data/sources.json. */
+  source: string;
   path: string;
   dir: string;
   domain: string;
@@ -16,10 +18,20 @@ export type Skill = {
 
 export type Stats = {
   skills: number;
+  sources: number;
   domains: number;
   scripts: number;
   references: number;
-  plugins: number;
+};
+
+export type Source = {
+  id: string;
+  label: string;
+  repo: string;
+  url: string;
+  license: string;
+  note?: string;
+  skills: number;
 };
 
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -108,19 +120,25 @@ export function formatBytes(n: number): string {
   return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(n < 10240 ? 1 : 0)} KB`;
 }
 
-export function installCommand(s: Skill): string {
+/**
+ * Self-contained: clones the source into a cache directory first, so the same
+ * command works from any directory and for any repository in the index.
+ */
+export function installCommand(s: Skill, source: Source): string {
   return [
-    "# รันคำสั่งนี้จากในโฟลเดอร์ claude-skills-main",
-    `mkdir -p ~/.claude/skills && cp -r ${s.dir} ~/.claude/skills/`,
+    `# ติดตั้ง ${s.name} จาก ${source.repo} (${source.license})`,
+    `SRC=~/.cache/claude-skill-sources/${source.id}`,
+    `git clone --depth 1 https://github.com/${source.repo}.git "$SRC" 2>/dev/null || git -C "$SRC" pull --quiet`,
+    `mkdir -p ~/.claude/skills && cp -r "$SRC/${s.dir}" ~/.claude/skills/`,
   ].join("\n");
 }
 
-export function portablePrompt(s: Skill, body: string): string {
+export function portablePrompt(s: Skill, body: string, source: Source): string {
   const lines = [
     `# Skill: ${s.name}`,
     s.description,
     "",
-    `Source: alirezarezvani/claude-skills (MIT license) — ${s.path}`,
+    `Source: ${source.repo} (${source.license} license) — ${s.path}`,
     "",
     "Adopt the skill below for the rest of this conversation. When my request falls inside its scope, follow its workflows, frameworks and output formats exactly. When it does not, answer normally and do not force the skill onto the task.",
     "",

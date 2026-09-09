@@ -5,6 +5,7 @@ import {
   BASE,
   type Platform,
   type Skill,
+  type Source,
   formatBytes,
   installCommand,
   portablePrompt,
@@ -48,10 +49,12 @@ async function copyText(text: string): Promise<boolean> {
 
 export default function SkillDetail({
   skill,
+  source,
   platform,
   onNotify,
 }: {
   skill: Skill;
+  source: Source;
   platform: Platform;
   onNotify: (message: string) => void;
 }) {
@@ -77,7 +80,7 @@ export default function SkillDetail({
   const copyPrompt = async () => {
     setBusy(true);
     try {
-      const text = portablePrompt(skill, body ?? (await loadBody(skill.slug)));
+      const text = portablePrompt(skill, body ?? (await loadBody(skill.slug)), source);
       const ok = await copyText(text);
       onNotify(
         ok
@@ -92,17 +95,26 @@ export default function SkillDetail({
   };
 
   const copyInstall = async () => {
-    const ok = await copyText(installCommand(skill));
+    const ok = await copyText(installCommand(skill, source));
     onNotify(ok ? "คัดลอกคำสั่งติดตั้งแล้ว" : "คัดลอกอัตโนมัติไม่ได้");
   };
 
-  const promptSize = body ? formatBytes(portablePrompt(skill, body).length) : "…";
+  const promptSize = body ? formatBytes(portablePrompt(skill, body, source).length) : "…";
 
   return (
     <div className="detail">
       <div className="path">{skill.path}</div>
 
       <dl>
+        <div className="pair">
+          <dt>แหล่ง</dt>
+          <dd>
+            <a href={source.url} target="_blank" rel="noreferrer">
+              {source.repo}
+            </a>{" "}
+            · {source.license}
+          </dd>
+        </div>
         <div className="pair">
           <dt>โดเมน</dt>
           <dd>{skill.domain}</dd>

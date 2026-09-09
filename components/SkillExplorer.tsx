@@ -7,6 +7,7 @@ import {
   PLATFORMS,
   type Lang,
   type Skill,
+  type Source,
   describe,
   rawIndex,
   wordIndex,
@@ -16,8 +17,15 @@ import SkillDetail from "@/components/SkillDetail";
 
 type Sort = "domain" | "name" | "tools";
 
-export default function SkillExplorer({ skills }: { skills: Skill[] }) {
+export default function SkillExplorer({
+  skills,
+  sources,
+}: {
+  skills: Skill[];
+  sources: Source[];
+}) {
   const [query, setQuery] = useState("");
+  const [sourceId, setSourceId] = useState<string | null>(null);
   const [domain, setDomain] = useState<string | null>(null);
   const [sort, setSort] = useState<Sort>("domain");
   const [onlyTools, setOnlyTools] = useState(false);
@@ -31,6 +39,7 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const platform = PLATFORMS.find((p) => p.id === platformId) ?? PLATFORMS[0];
+  const sourceById = useMemo(() => new Map(sources.map((x) => [x.id, x])), [sources]);
 
   // Search indexes are derived once; the browser never rebuilds them per keystroke.
   const indexes = useMemo(() => {
@@ -39,18 +48,23 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
     return map;
   }, [skills]);
 
+  const inSource = useMemo(
+    () => (sourceId ? skills.filter((s) => s.source === sourceId) : skills),
+    [skills, sourceId]
+  );
+
   const domains = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const s of skills) counts.set(s.domain, (counts.get(s.domain) ?? 0) + 1);
+    for (const s of inSource) counts.set(s.domain, (counts.get(s.domain) ?? 0) + 1);
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  }, [skills]);
+  }, [inSource]);
   const maxDomain = domains[0]?.[1] ?? 1;
 
   const parsed = useMemo(() => parseQuery(query), [query]);
 
   const results = useMemo(() => {
     const { concepts, leftover, plain } = parsed;
-    let out = skills.filter((s) => {
+    let out = inSource.filter((s) => {
       if (domain && s.domain !== domain) return false;
       if (onlyTools && !s.scripts) return false;
       if (!concepts.length && !plain) return true;
@@ -65,7 +79,7 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
     else if (sort === "tools")
       out = [...out].sort((a, b) => b.scripts - a.scripts || a.name.localeCompare(b.name));
     return out;
-  }, [skills, indexes, parsed, domain, onlyTools, sort]);
+  }, [inSource, indexes, parsed, domain, onlyTools, sort]);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -115,6 +129,23 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
             />
             <kbd>/</kbd>
           </div>
+
+          <select
+            value={sourceId ?? ""}
+            aria-label="แหล่งที่มาของสกิล"
+            onChange={(e) => {
+              setSourceId(e.target.value || null);
+              setDomain(null);
+              reset();
+            }}
+          >
+            <option value="">ทุกแหล่ง ({skills.length})</option>
+            {sources.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.label} ({x.skills})
+              </option>
+            ))}
+          </select>
 
           <select
             className="platform"
@@ -167,7 +198,7 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
           </button>
 
           <p className="count" aria-live="polite">
-            แสดง <b className="num">{results.length}</b> / <span className="num">{skills.length}</span>
+            แสดง <b className="num">{results.length}</b> / <span className="num">{inSource.length}</span>
           </p>
         </div>
       </div>
@@ -178,7 +209,7 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
           <ul>
             <RailItem
               label="ทั้งหมด"
-              count={skills.length}
+              count={inSource.length}
               width={100}
               active={domain === null}
               onClick={() => {
@@ -257,6 +288,8 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
                 openSlug={openSlug}
                 platform={platform}
                 lang={lang}
+                sourceById={sourceById}
+                showSourceChip={sourceId === null}
                 onToggle={(slug) => setOpenSlug((cur) => (cur === slug ? null : slug))}
                 onNotify={notify}
               />
@@ -303,6 +336,8 @@ function Results({
   openSlug,
   platform,
   lang,
+  sourceById,
+  showSourceChip,
   onToggle,
   onNotify,
 }: {
@@ -312,6 +347,8 @@ function Results({
   openSlug: string | null;
   platform: (typeof PLATFORMS)[number];
   lang: Lang;
+  sourceById: Map<string, Source>;
+  showSourceChip: boolean;
   onToggle: (slug: string) => void;
   onNotify: (message: string) => void;
 }) {
@@ -362,11 +399,19 @@ function Results({
             {text.sub && <span className="dsc-alt">{text.sub}</span>}
           </span>
           <span className="kit">
+            {showSourceChip && <span className="chip src">{sourceById.get(skill.source)?.label}</span>}
             {skill.scripts > 0 && <span className="chip py num">{skill.scripts} py</span>}
             {skill.references > 0 && <span className="chip num">{skill.references} ref</span>}
           </span>
         </button>
-        {open && <SkillDetail skill={skill} platform={platform} onNotify={onNotify} />}
+        {open && (
+          <SkillDetail
+            skill={skill}
+            source={sourceById.get(skill.source)!}
+            platform={platform}
+            onNotify={onNotify}
+          />
+        )}
       </div>
     );
   }

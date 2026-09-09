@@ -1,22 +1,23 @@
 import data from "@/data/index.json";
 import SkillExplorer from "@/components/SkillExplorer";
-import type { Skill, Stats } from "@/lib/skills";
+import type { Skill, Source, Stats } from "@/lib/skills";
 
 export default function Page() {
   const stats = data.stats as Stats;
   const skills = data.skills as Skill[];
+  const sources = data.sources as Source[];
 
   return (
     <>
       <header className="top">
         <div className="wrap">
           <div className="mast">
-            <p className="eyebrow">alirezarezvani / claude-skills · v2.12.0 · MIT</p>
+            <p className="eyebrow">ดัชนีรวมจากหลายคลัง · อัปเดตอัตโนมัติ</p>
             <h1>ดัชนีสกิลทั้งหมด</h1>
             <p className="sub">
-              ค้นหาด้วยภาษาไทยหรืออังกฤษ กรองตามโดเมน แล้ว<b>คัดลอกไปใช้ได้ทันที</b> ทั้ง{" "}
-              <span className="nb">Claude Code</span>, <span className="nb">Claude.ai</span>,
-              ChatGPT และ Gemini
+              รวมสกิลจาก {stats.sources} คลัง ค้นหาด้วยภาษาไทยหรืออังกฤษ แล้ว
+              <b>คัดลอกไปใช้ได้ทันที</b> ทั้ง <span className="nb">Claude Code</span>,{" "}
+              <span className="nb">Claude.ai</span>, ChatGPT และ Gemini
             </p>
           </div>
         </div>
@@ -38,8 +39,8 @@ export default function Page() {
             <span>เอกสารอ้างอิง</span>
           </div>
           <div>
-            <b className="num">{stats.plugins}</b>
-            <span>ปลั๊กอิน</span>
+            <b className="num">{stats.sources}</b>
+            <span>คลังต้นทาง</span>
           </div>
         </div>
       </header>
@@ -63,15 +64,22 @@ export default function Page() {
         </div>
       </div>
 
-      <SkillExplorer skills={skills} />
+      <SkillExplorer skills={skills} sources={sources} />
 
       <footer className="wrap">
         <p>
-          ข้อมูลสแกนจาก <code>SKILL.md</code> ทุกไฟล์ (ไม่รวม mirror tree{" "}
-          <code>.codex/ .gemini/ .vibe/ .hermes/</code>) — เนื้อหาสกิลทั้งหมดมาจาก{" "}
-          <a href="https://github.com/alirezarezvani/claude-skills">alirezarezvani/claude-skills</a>{" "}
-          เผยแพร่ภายใต้สัญญาอนุญาต MIT เมื่อนำไปใช้ต่อ กรุณาคงเครดิตต้นทางไว้
+          ข้อมูลสแกนจาก <code>SKILL.md</code> ทุกไฟล์ในคลังต้นทาง (ไม่รวม mirror tree{" "}
+          <code>.codex/ .gemini/ .vibe/ .hermes/</code>) เนื้อหาสกิลเป็นของเจ้าของคลังแต่ละแห่ง
+          เมื่อนำไปใช้ต่อ กรุณาคงเครดิตและสัญญาอนุญาตเดิมไว้
         </p>
+        <ul className="credits">
+          {sources.map((x) => (
+            <li key={x.id}>
+              <a href={x.url}>{x.repo}</a> · {x.license} · {x.skills} สกิล
+              {x.note ? ` — ${x.note}` : ""}
+            </li>
+          ))}
+        </ul>
       </footer>
     </>
   );

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "claude-skills",
+    "label": "claude-skills",
+    "repo": "alirezarezvani/claude-skills",
+    "url": "https://github.com/alirezarezvani/claude-skills",
+    "license": "MIT",
+    "branch": "main",
+    "note": "คลังสกิลชุมชนขนาดใหญ่ 20 โดเมน"
+  },
+  {
+    "id": "financial-services",
+    "label": "Financial Services",
+    "repo": "anthropics/financial-services",
+    "url": "https://github.com/anthropics/financial-services",
+    "license": "Apache-2.0",
+    "branch": "main",
+    "note": "สกิลสายการเงินอย่างเป็นทางการจาก Anthropic"
+  }
+]
