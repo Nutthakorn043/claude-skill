@@ -6,6 +6,8 @@ export type Skill = {
   group: string;
   name: string;
   description: string;
+  /** Thai translation of `description`; empty when not translated yet. */
+  descriptionTh: string;
   version: string;
   scripts: number;
   references: number;
@@ -88,8 +90,18 @@ export function wordIndex(s: Skill): string {
   return ` ${tokens.join(" ")} `;
 }
 
+/** Everything a free-text query can match, both languages at once. */
 export function rawIndex(s: Skill): string {
-  return `${s.name} ${s.description} ${s.path}`.toLowerCase();
+  return `${s.name} ${s.description} ${s.descriptionTh} ${s.path}`.toLowerCase();
+}
+
+export type Lang = "th" | "en" | "both";
+
+/** The description to show, falling back to English where Thai is missing. */
+export function describe(s: Skill, lang: Lang): { main: string; sub: string } {
+  if (lang === "en" || !s.descriptionTh) return { main: s.description, sub: "" };
+  if (lang === "th") return { main: s.descriptionTh, sub: "" };
+  return { main: s.descriptionTh, sub: s.description };
 }
 
 export function formatBytes(n: number): string {

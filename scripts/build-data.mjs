@@ -73,6 +73,15 @@ if (files.length === 0) {
   process.exit(1);
 }
 
+// Thai descriptions, keyed by slug. Missing entries fall back to English, so
+// the site stays correct while the translation is still being filled in.
+let thai = {};
+try {
+  thai = JSON.parse(readFileSync("data/th.json", "utf8"));
+} catch {
+  console.warn("data/th.json not found or unreadable - shipping English only");
+}
+
 const skills = [];
 const bodies = new Map();
 
@@ -104,6 +113,7 @@ for (const file of files) {
     group,
     name,
     description,
+    descriptionTh: thai[slug] ?? "",
     version: readField(lines, "version"),
     scripts: countFiles(join(dirname(file), "scripts"), ".py"),
     references: countFiles(join(dirname(file), "references"), ".md"),
@@ -145,4 +155,10 @@ console.log(`public/data/body/*.json  ${bodies.size} files, ${bodyMb.toFixed(2)}
 console.log(
   `${stats.skills} skills  ${stats.domains} domains  ${stats.scripts} scripts  ` +
     `${stats.references} references  ${stats.plugins} plugins`
+);
+
+const translated = skills.filter((s) => s.descriptionTh).length;
+console.log(
+  `thai descriptions          ${translated}/${skills.length} ` +
+    `(${Math.round((translated / skills.length) * 100)}%)`
 );

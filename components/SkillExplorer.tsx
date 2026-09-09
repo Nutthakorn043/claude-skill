@@ -5,7 +5,9 @@ import {
   BASE,
   DOMAIN_LABEL,
   PLATFORMS,
+  type Lang,
   type Skill,
+  describe,
   rawIndex,
   wordIndex,
 } from "@/lib/skills";
@@ -20,6 +22,7 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
   const [sort, setSort] = useState<Sort>("domain");
   const [onlyTools, setOnlyTools] = useState(false);
   const [platformId, setPlatformId] = useState(PLATFORMS[0].id);
+  const [lang, setLang] = useState<Lang>("th");
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [vocabOpen, setVocabOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -124,6 +127,16 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
                 → {p.label}
               </option>
             ))}
+          </select>
+
+          <select
+            value={lang}
+            aria-label="ภาษาของคำอธิบาย"
+            onChange={(e) => setLang(e.target.value as Lang)}
+          >
+            <option value="th">คำอธิบายไทย</option>
+            <option value="en">English</option>
+            <option value="both">ไทย + English</option>
           </select>
 
           <select value={sort} aria-label="เรียงลำดับ" onChange={(e) => setSort(e.target.value as Sort)}>
@@ -243,6 +256,7 @@ export default function SkillExplorer({ skills }: { skills: Skill[] }) {
                 highlight={highlight}
                 openSlug={openSlug}
                 platform={platform}
+                lang={lang}
                 onToggle={(slug) => setOpenSlug((cur) => (cur === slug ? null : slug))}
                 onNotify={notify}
               />
@@ -288,6 +302,7 @@ function Results({
   highlight,
   openSlug,
   platform,
+  lang,
   onToggle,
   onNotify,
 }: {
@@ -296,6 +311,7 @@ function Results({
   highlight: string;
   openSlug: string | null;
   platform: (typeof PLATFORMS)[number];
+  lang: Lang;
   onToggle: (slug: string) => void;
   onNotify: (message: string) => void;
 }) {
@@ -331,6 +347,7 @@ function Results({
 
   function row(skill: Skill) {
     const open = openSlug === skill.slug;
+    const text = describe(skill, lang);
     return (
       <div key={skill.slug}>
         <button className="row" type="button" aria-expanded={open} onClick={() => onToggle(skill.slug)}>
@@ -340,7 +357,10 @@ function Results({
               <span className="bundle">{skill.group.slice(skill.domain.length + 1)}/</span>
             )}
           </span>
-          <span className="dsc">{skill.description}</span>
+          <span className="dsc">
+            <span className="dsc-main">{text.main}</span>
+            {text.sub && <span className="dsc-alt">{text.sub}</span>}
+          </span>
           <span className="kit">
             {skill.scripts > 0 && <span className="chip py num">{skill.scripts} py</span>}
             {skill.references > 0 && <span className="chip num">{skill.references} ref</span>}

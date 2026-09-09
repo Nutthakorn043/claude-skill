@@ -107,10 +107,10 @@ export function parseQuery(raw: string): ParsedQuery {
     }
   }
 
-  // Leftovers only narrow the search when they are real text, not stray Thai
-  // particles the vocabulary does not cover.
+  // Leftovers still narrow the search. Thai now counts too: descriptions are
+  // translated, so a Thai word outside the vocabulary can match directly.
   const trimmed = rest.replace(/\s+/g, " ").trim();
-  const leftover = trimmed.length >= 2 && /[a-z0-9]/.test(trimmed) ? trimmed : "";
+  const leftover = trimmed.length >= 2 ? trimmed : "";
 
   return {
     concepts,
